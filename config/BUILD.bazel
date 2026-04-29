@@ -1,0 +1,10 @@
+package(default_visibility = ["//visibility:public"])
+
+# loki-values.yaml is exported so consumers can inspect (or copy + extend)
+# the values used to render the committed manifest.
+exports_files(["loki-values.yaml"])
+
+filegroup(
+    name = "loki_values",
+    srcs = ["loki-values.yaml"],
+)

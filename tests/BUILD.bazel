@@ -1,0 +1,84 @@
+"""Tests for rules_loki.
+
+- Analysis test verifies the macro instantiates cleanly.
+- Smoke test composes a real kind cluster, applies Loki via the rule
+  under test, then runs an in-cluster `curl` pod that pushes a log line
+  via /loki/api/v1/push and queries it back via /loki/api/v1/query —
+  asserting the round-trip. Needs Docker on the host.
+"""
+
+load("@rules_itest//:itest.bzl", "itest_service", "service_test")
+load("@rules_kind//:defs.bzl", "kind_cluster", "kind_health_check")
+load("@rules_loki//:defs.bzl", "loki_health_check", "loki_install")
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load(":analysis_tests.bzl", "loki_install_test_suite")
+
+# ---- analysis ---------------------------------------------------------------
+
+loki_install_test_suite(name = "loki_install_analysis")
+
+# ---- smoke composition ------------------------------------------------------
+
+kind_cluster(name = "cluster", k8s_version = "1.32")
+
+kind_health_check(name = "cluster_health", cluster = ":cluster")
+
+itest_service(
+    name = "kind_svc",
+    exe = ":cluster",
+    health_check = ":cluster_health",
+    tags = ["manual"],
+)
+
+# Rule under test — applies the pinned Loki manifest, waits for the
+# StatefulSet rollout, idles.
+loki_install(
+    name = "loki_install_bin",
+    tags = ["manual"],
+)
+
+loki_health_check(
+    name = "loki_health_bin",
+    tags = ["manual"],
+)
+
+# Wrappers source the kind cluster's env file so KUBECONFIG/KUBECTL cross
+# the `exec` boundary into the install bin. Same shape every operator
+# rule uses.
+sh_binary(
+    name = "loki_install_wrapper",
+    srcs = ["install_wrapper.sh"],
+    data = [":loki_install_bin"],
+)
+
+sh_binary(
+    name = "loki_health_wrapper",
+    srcs = ["health_wrapper.sh"],
+    data = [":loki_health_bin"],
+)
+
+itest_service(
+    name = "loki_svc",
+    exe = ":loki_install_wrapper",
+    deps = [":kind_svc"],
+    health_check = ":loki_health_wrapper",
+    tags = ["manual"],
+)
+
+sh_test(
+    name = "smoke_test_bin",
+    srcs = ["smoke_test.sh"],
+    tags = ["manual"],
+)
+
+service_test(
+    name = "smoke_test",
+    services = [":loki_svc"],
+    test = ":smoke_test_bin",
+    tags = [
+        "manual",  # needs Docker; ~2-3 minute warm-up
+        "no-sandbox",
+        "requires-network",
+    ],
+)

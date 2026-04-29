@@ -1,0 +1,65 @@
+"""rules_loki — hermetic Grafana Loki install for Bazel test compositions.
+
+Thin layer over rules_kubectl + rules_helm: the public `loki_install` and
+`loki_health_check` macros emit `kubectl_apply` / `kubectl_apply_health_check`
+targets pre-configured for Loki, applying a committed pre-rendered helm
+manifest. The maintainer-side render uses `rules_helm` to render the
+upstream chart with the values in config/loki-values.yaml.
+"""
+
+module(
+    name = "rules_loki",
+    version = "0.1.0",
+)
+
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
+bazel_dep(name = "platforms", version = "1.0.0")
+
+# rules_kubectl is a public dep — `loki_install` is a thin macro around it,
+# so consumers transitively get the kubectl_apply launcher. No extension
+# wiring required; just a normal bazel_dep.
+bazel_dep(name = "rules_kubectl", version = "0.1.0")
+git_override(
+    module_name = "rules_kubectl",
+    remote = "https://github.com/collider-bazel-extensions/rules_kubectl",
+    commit = "bb75b97850b08a18abcdca7af86514561a122b03",  # v0.1.0 — kubectl_apply + kubectl_apply_health_check
+)
+
+# ---- dev-only: rules_kind + rules_itest + rules_helm + rules_shell ----------
+# Consumers do NOT inherit any of these. The maintainer-side render flow
+# uses rules_helm; the in-tree smoke composes a kind cluster, the rule
+# under test, and a curl pod that round-trips a log via Loki's HTTP API.
+bazel_dep(name = "rules_itest", version = "0.0.52", dev_dependency = True)
+bazel_dep(name = "rules_shell", version = "0.8.0", dev_dependency = True)
+
+bazel_dep(name = "rules_kind", version = "0.1.2", dev_dependency = True)
+git_override(
+    module_name = "rules_kind",
+    remote = "https://github.com/collider-bazel-extensions/rules_kind",
+    commit = "b9c4670646f8e3772816f56a048e311d5310a763",  # v0.1.2 — adds k8s 1.32
+)
+
+bazel_dep(name = "rules_helm", version = "0.2.1", dev_dependency = True)
+git_override(
+    module_name = "rules_helm",
+    remote = "https://github.com/collider-bazel-extensions/rules_helm",
+    commit = "48651387d55f0c50f6d059df246ed73767100afb",  # v0.2.1 — subchart-aware chart-root detection
+)
+
+helm = use_extension("@rules_helm//:extensions.bzl", "helm", dev_dependency = True)
+helm.version(version = "3.20.2")
+use_repo(helm,
+    "helm_linux_amd64",
+    "helm_darwin_amd64",
+    "helm_darwin_arm64",
+)
+register_toolchains(
+    "@helm_linux_amd64//:toolchain",
+    "@helm_darwin_amd64//:toolchain",
+    "@helm_darwin_arm64//:toolchain",
+    dev_dependency = True,
+)
+
+loki_chart = use_extension("//tools:extensions.bzl", "loki_chart", dev_dependency = True)
+loki_chart.version(version = "7.0.0")
+use_repo(loki_chart, "loki_chart_7_0_0")

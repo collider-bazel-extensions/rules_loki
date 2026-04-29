@@ -1,0 +1,86 @@
+# Render-time values for rules_loki's pinned manifest.
+#
+# Mode: SingleBinary + filesystem storage. The smallest viable Loki for
+# integration tests — one StatefulSet pod, no object-storage dependency,
+# auth disabled. Real production deployments would override most of this.
+#
+# Consumers can read this file via @rules_loki//config:loki_values to see
+# what flags the committed manifest was rendered with.
+
+deploymentMode: SingleBinary
+
+loki:
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+  schemaConfig:
+    configs:
+      - from: "2024-04-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: loki_index_
+          period: 24h
+  storage:
+    type: filesystem
+  # Pattern caching is a 3.x feature that needs network reachability for
+  # external schema state; disabling keeps the smoke offline-clean.
+  pattern_ingester:
+    enabled: false
+  ruler:
+    enable_api: false
+
+# SingleBinary runs everything in one StatefulSet replica.
+singleBinary:
+  replicas: 1
+  persistence:
+    enabled: true
+    size: 1Gi
+
+# Other deployment shapes off.
+read:
+  replicas: 0
+write:
+  replicas: 0
+backend:
+  replicas: 0
+
+# Caches off — SingleBinary doesn't need them, and they'd add Memcached pods.
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+
+# Gateway is an nginx fronting the Loki HTTP API. Tests hit Loki's Service
+# directly, so no need.
+gateway:
+  enabled: false
+
+# Self-monitoring + dashboards + canary off — not needed for tests, would
+# pull in extra subcharts (grafana-agent-operator) and add a DaemonSet.
+test:
+  enabled: false
+# `lokiCanary` is at the chart top level in v7.x — putting it only under
+# `monitoring:` is silently ignored and the chart still renders the
+# DaemonSet. Pin both forms defensively.
+lokiCanary:
+  enabled: false
+monitoring:
+  selfMonitoring:
+    enabled: false
+    grafanaAgent:
+      installOperator: false
+  serviceMonitor:
+    enabled: false
+  rules:
+    enabled: false
+  dashboards:
+    enabled: false
+  lokiCanary:
+    enabled: false
+
+# minio (subchart) provides S3-compatible object storage; we use filesystem
+# instead, so disable.
+minio:
+  enabled: false

@@ -1,0 +1,40 @@
+"""Maintainer-only render flow.
+
+Pipeline:
+  @loki_chart_<ver>//:files + //config:loki-values.yaml
+                       │
+                       ▼  helm_template (rules_helm)
+                       ▼
+       bazel-bin/tools/loki_<ver>.yaml
+                       │
+                       ▼  bazel run //tools:render_writeback_<ver>
+                       ▼
+   private/manifests/loki.yaml (committed; what consumers consume)
+
+NO host helm needed at any point.
+"""
+
+load("@rules_helm//:defs.bzl", "helm_template")
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+
+# ---- 7.0.0 ------------------------------------------------------------------
+
+helm_template(
+    name = "render_loki_7_0_0",
+    chart = ["@loki_chart_7_0_0//:files"],
+    values = ["//config:loki-values.yaml"],
+    namespace = "loki",
+    release_name = "loki",
+    include_crds = True,
+)
+
+sh_binary(
+    name = "render_writeback_7_0_0",
+    srcs = ["writeback.sh"],
+    data = [":render_loki_7_0_0"],
+    args = [
+        "$(rootpath :render_loki_7_0_0)",
+        "private/manifests/loki.yaml",
+    ],
+    visibility = ["//visibility:public"],
+)
