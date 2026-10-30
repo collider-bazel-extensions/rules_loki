@@ -20,7 +20,7 @@ loki_install_test_suite(name = "loki_install_analysis")
 
 # ---- smoke composition ------------------------------------------------------
 
-kind_cluster(name = "cluster", k8s_version = "1.32")
+kind_cluster(name = "cluster", k8s_version = "1.35")
 
 kind_health_check(name = "cluster_health", cluster = ":cluster")
 

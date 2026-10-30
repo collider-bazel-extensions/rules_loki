@@ -37,7 +37,7 @@ jobs:
           if-no-files-found: ignore
 
   smoke:
-    # End-to-end: kind cluster (k8s 1.32) + Loki SingleBinary install +
+    # End-to-end: kind cluster (k8s 1.35) + Loki SingleBinary install +
     # in-cluster curl pod that round-trips a synthetic log through
     # /loki/api/v1/push and /loki/api/v1/query_range.
     name: smoke (ubuntu-latest, docker)
