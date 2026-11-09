@@ -41,14 +41,18 @@ runs (the rules_kubectl substrate). Validated on Linux x86\_64 in CI.
 ## Installation
 
 ```python
-bazel_dep(name = "rules_loki", version = "0.1.0")
+bazel_dep(name = "rules_loki", version = "0.1.1")
 ```
 
-That's it — `rules_loki` transitively pulls in
+That's it — `rules_loki` depends on
 [`rules_kubectl`](https://github.com/collider-bazel-extensions/rules_kubectl),
 which is what `loki_install` actually expands to. No extension wiring
 required at the consumer level. Bzlmod-only in v0.1; until BCR, consume
-via `archive_override` or a git pin.
+via `archive_override` or a git pin — and pin `rules_kubectl` the same
+way in your root module, since rules_loki's own `git_override` for it
+applies only when rules_loki is the root.
+
+The release archive (the tag tarball, `archive/refs/tags/v0.1.1.tar.gz`) leaves out `tests/` and `tools/`, whose packages load dev-only modules (`rules_itest`, `rules_kind`, `rules_helm`, `rules_shell`), so `bazel query @rules_loki//...` works for consumers. A `git_override` clone still contains them; name packages instead (for example `@rules_loki//:all`).
 
 ---
 
@@ -144,6 +148,7 @@ PRs welcome. Conventions match the sibling rule sets:
 - New rules need an analysis test in `tests/analysis_tests.bzl`.
 - Bumping the pinned chart version: edit `tools/versions.bzl`, add the new `helm_template + sh_binary` block in `tools/BUILD.bazel`, run `bash tools/render_loki.sh <new-version>`, commit.
 - `MODULE.bazel.lock` is intentionally not committed.
+- `tests/` and `tools/` are `export-ignore`d (`.gitattributes`), so they may load dev-only modules; nothing else may. CI's `consumer` job checks that the commit's `git archive` loads with `//...` for a consumer.
 
 ### Help wanted: macOS validation
 
