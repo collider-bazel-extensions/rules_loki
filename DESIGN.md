@@ -33,6 +33,7 @@ build-time CLI wrappers (`rules_helm`, `rules_opa`).
 | 11 | Smoke assertion | **Round-trip a synthetic log** through Loki's HTTP API. An in-cluster curl pod POSTs to `/loki/api/v1/push`, polls `/loki/api/v1/query_range` for the payload, asserts the round-trip. Proves ingester + querier + filesystem storage actually work — not just "pods Running." | Loki-specific |
 | 12 | Naming | snake_case rules/macros, `MixedCaseInfo` providers (none in v0.1), `UPPER_SNAKE` constants. | All siblings |
 | 13 | Update workflow | `bash tools/render_loki.sh <chart-version>` → thin shim around `bazel run //tools:render_writeback_<dotted_version>`. Hermetic (rules_helm's helm); no host helm needed. | rules_capsule / rules_cilium pattern |
+| 14 | Release archive contents | `tests/` and `tools/` are `export-ignore` (`.gitattributes`): they load the dev-only `rules_itest` / `rules_kind` / `rules_helm` / `rules_shell`, which made `@rules_loki//...` unloadable for consumers. `REPO.bazel` `ignore_directories` was rejected: it also hides them from this repo's own `bazel test`. The dev-only `use_extension("//tools:extensions.bzl", ...)` is skipped for a non-root module. A `git_override` clone still contains both. CI's `consumer` job (`.github/consumer/check.sh`) queries `//...` from the commit's `git archive`. | Org sweep (rules_kubectl#5) |
 
 ## Loki-specific notes
 
