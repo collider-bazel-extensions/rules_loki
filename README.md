@@ -153,3 +153,11 @@ PRs welcome. Conventions match the sibling rule sets:
 ### Help wanted: macOS validation
 
 The macros are platform-independent (everything runs through `rules_kubectl`'s bash + python3 launcher). A pasted log from a green `bazel test //tests:smoke_test` on macOS would unblock the macOS support claim.
+
+---
+
+## Requesting a new rules package
+
+Want Bazel rules for another tool or service?
+[Request a rules package](https://github.com/collider-bazel-extensions/.github/issues/new?template=request-a-rules-package.yml).
+The [organization page](https://github.com/collider-bazel-extensions) lists every package.
