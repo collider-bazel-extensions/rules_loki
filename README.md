@@ -41,7 +41,7 @@ runs (the rules_kubectl substrate). Validated on Linux x86\_64 in CI.
 ## Installation
 
 ```python
-bazel_dep(name = "rules_loki", version = "0.1.1")
+bazel_dep(name = "rules_loki", version = "0.1.2")
 ```
 
 That's it — `rules_loki` depends on
@@ -161,3 +161,9 @@ The macros are platform-independent (everything runs through `rules_kubectl`'s b
 Want Bazel rules for another tool or service?
 [Request a rules package](https://github.com/collider-bazel-extensions/.github/issues/new?template=request-a-rules-package.yml).
 The [organization page](https://github.com/collider-bazel-extensions) lists every package.
+
+## License
+
+[Apache License 2.0](LICENSE) (SPDX: `Apache-2.0`).
+
+Manifests in `private/manifests/` that are rendered from upstream charts or releases remain under their upstream projects' licences.
